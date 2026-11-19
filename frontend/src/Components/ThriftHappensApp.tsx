@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState, type SubmitEvent, type ChangeEvent } from "react";
 import type { ClothingProduct } from "../data/data";
 import ItemsContainer from "./ItemsContainer";
 import NavBar from "./NavBar";
 import CheckoutContainer from "./CheckoutContainer";
-
-interface ThriftHappensAppProps {
-  products: ClothingProduct[];
-}
+import axios from "axios";
+import FormComponent from "./FormComponent";
 
 export interface ItemsContainerProps {
   products: ClothingProduct[];
@@ -48,16 +46,64 @@ export interface CheckoutContainerProps {
   handleEmptyCheckout: () => void;
 }
 
-export default function ThriftHappensApp({ products }: ThriftHappensAppProps) {
-  const [itemsQuantity, setItemsQuantity] = useState<ItemsQuantity[]>(
-    products.map((prod) => ({
-      id: prod.id,
-      userQuantity: 0,
-      remainQuantity: prod.quantity,
-    })),
-  );
+export interface FormComponentProps {
+  clothingArticle: ClothingProduct;
+  handleOnSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
+  handleOnChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+}
 
+export default function ThriftHappensApp() {
+  const [products, setProducts] = useState<ClothingProduct[]>([]);
+  const [itemsQuantity, setItemsQuantity] = useState<ItemsQuantity[]>([]);
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>([]);
+  const [clothingArticle, setClothingArticle] = useState<ClothingProduct>({
+    id: 0,
+    name: "",
+    image: "",
+    fit: "men",
+    category: "hoodie",
+    size: "M",
+    color: "",
+    description: "",
+    price: 0,
+    quantity: 0,
+    itemQuantity: 0,
+  });
+
+  async function getProductsFromDb() {
+    try {
+      const { data } = await axios.get("http://localhost:3000/data");
+      setProducts(data);
+      setItemsQuantity(
+        data.map((product: ClothingProduct) => ({
+          id: product.id,
+          userQuantity: 0,
+          remainQuantity: product.quantity,
+        })),
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    async function getProductsFromDb() {
+      try {
+        const { data } = await axios.get("http://localhost:3000/data");
+        setProducts(data);
+        setItemsQuantity(
+          data.map((product: ClothingProduct) => ({
+            id: product.id,
+            userQuantity: 0,
+            remainQuantity: product.quantity,
+          })),
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    getProductsFromDb();
+  }, []);
 
   function handleAdjustQuantityCounter(
     id: number,
@@ -153,6 +199,21 @@ export default function ThriftHappensApp({ products }: ThriftHappensAppProps) {
     0,
   );
 
+  function handleOnChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+    const { name, value } = e.target;
+    const numericFields = ["id", "price", "quantity", "itemQuantity"];
+
+    setClothingArticle((prev) => ({
+      ...prev,
+      [name]: numericFields.includes(name) ? Number(value) : value,
+    }));
+  }
+
+  function handleOnSubmit(e: SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
+    return;
+  }
+
   return (
     <div>
       <NavBar />
@@ -168,6 +229,11 @@ export default function ThriftHappensApp({ products }: ThriftHappensAppProps) {
           checkoutTotal={checkoutTotal}
           handleRemoveFromCheckout={handleRemoveFromCheckout}
           handleEmptyCheckout={handleEmptyCheckout}
+        />
+        <FormComponent
+          clothingArticle={clothingArticle}
+          handleOnChange={handleOnChange}
+          handleOnSubmit={handleOnSubmit}
         />
       </div>
     </div>
