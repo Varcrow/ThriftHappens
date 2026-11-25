@@ -42,11 +42,52 @@ server.get("/", (request, response) => {
   response.send("Server is live.");
 });
 
-// GET data apit route
+// GET data api route
 server.get("/data", async (request, response) => {
   try {
     const data = await ClothesItem.find();
     response.status(200).send(data);
+  } catch (error) {
+    console.log(error);
+    response.status(500).send(error);
+  }
+});
+
+// POST route to add clothing article to db
+server.post("/data", async (request, response) => {
+  const {
+    id,
+    name,
+    image,
+    fit,
+    category,
+    size,
+    color,
+    description,
+    price,
+    quantity,
+    itemQuantity,
+  } = request.body;
+
+  const newArticle = new ClothesItem({
+    id,
+    name,
+    image,
+    fit,
+    category,
+    size,
+    color,
+    description,
+    price,
+    quantity,
+    itemQuantity,
+  });
+
+  try {
+    await newArticle.save();
+    response
+      .status(201)
+      .send({ message: `The new item with ${id} has been added successfully` });
   } catch (error) {
     console.log(error);
     response.status(500).send(error);

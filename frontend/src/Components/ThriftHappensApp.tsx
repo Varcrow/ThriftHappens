@@ -48,16 +48,20 @@ export interface CheckoutContainerProps {
 
 export interface FormComponentProps {
   clothingArticle: ClothingProduct;
+  responseMessage: string;
   handleOnSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
-  handleOnChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
+  handleOnChange: (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => void;
 }
 
 export default function ThriftHappensApp() {
   const [products, setProducts] = useState<ClothingProduct[]>([]);
   const [itemsQuantity, setItemsQuantity] = useState<ItemsQuantity[]>([]);
   const [checkoutItems, setCheckoutItems] = useState<CheckoutItem[]>([]);
+  const [responseMessage, setResponseMessage] = useState<string>("");
   const [clothingArticle, setClothingArticle] = useState<ClothingProduct>({
-    id: 0,
+    id: -1,
     name: "",
     image: "",
     fit: "men",
@@ -199,7 +203,9 @@ export default function ThriftHappensApp() {
     0,
   );
 
-  function handleOnChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+  function handleOnChange(
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) {
     const { name, value } = e.target;
     const numericFields = ["id", "price", "quantity", "itemQuantity"];
 
@@ -209,9 +215,34 @@ export default function ThriftHappensApp() {
     }));
   }
 
-  function handleOnSubmit(e: SubmitEvent<HTMLFormElement>) {
+  async function handleOnSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    return;
+
+    // If input on form is brand new article use the POST route to create new clothing article
+    if (clothingArticle.id === -1) {
+      try {
+        await axios.post("http://localhost:3000/data", {
+          ...clothingArticle,
+          id: parseInt((Math.random() * 10000 + 50).toFixed(0)),
+        }).then((response) => setResponseMessage(response.data.message));
+        await getProductsFromDb(); // Refresh db
+        setClothingArticle({
+          id: -1,
+          name: "",
+          image: "",
+          fit: "men",
+          category: "hoodie",
+          size: "M",
+          color: "",
+          description: "",
+          price: 0,
+          quantity: 0,
+          itemQuantity: 0,
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    }
   }
 
   return (
@@ -232,6 +263,7 @@ export default function ThriftHappensApp() {
         />
         <FormComponent
           clothingArticle={clothingArticle}
+          responseMessage={responseMessage}
           handleOnChange={handleOnChange}
           handleOnSubmit={handleOnSubmit}
         />
