@@ -22,6 +22,8 @@ export interface ItemsContainerProps {
     userQuantity: number,
     price: number,
   ) => void;
+  handleDeleteItem: (id: number) => void;
+  handleEditItem: (id: number) => void;
 }
 
 export interface ItemsQuantity {
@@ -118,20 +120,20 @@ export default function ThriftHappensApp() {
       prevData.map((prev) =>
         prev.id === id
           ? {
-              ...prev,
-              userQuantity: Math.max(
-                prev.userQuantity + delta <= remainQuantity
-                  ? prev.userQuantity + delta
-                  : prev.userQuantity,
-                0,
-              ),
-              remainQuantit: Math.max(
-                prev.remainQuantity - delta <= remainQuantity
-                  ? prev.remainQuantity - delta
-                  : prev.remainQuantity,
-                0,
-              ),
-            }
+            ...prev,
+            userQuantity: Math.max(
+              prev.userQuantity + delta <= remainQuantity
+                ? prev.userQuantity + delta
+                : prev.userQuantity,
+              0,
+            ),
+            remainQuantit: Math.max(
+              prev.remainQuantity - delta <= remainQuantity
+                ? prev.remainQuantity - delta
+                : prev.remainQuantity,
+              0,
+            ),
+          }
           : { ...prev },
       ),
     );
@@ -165,10 +167,10 @@ export default function ThriftHappensApp() {
       prevItems.map((prev) =>
         prev.id === id
           ? {
-              ...prev,
-              userQuantity: 0,
-              remainQuantity: prev.remainQuantity - prev.userQuantity,
-            }
+            ...prev,
+            userQuantity: 0,
+            remainQuantity: prev.remainQuantity - prev.userQuantity,
+          }
           : { ...prev },
       ),
     );
@@ -241,8 +243,49 @@ export default function ThriftHappensApp() {
         });
       } catch (error) {
         console.log(error);
+        // maybe add set reponse here too
+      }
+    } else {
+      try {
+        await axios.patch(`http://localhost:3000/data/${clothingArticle.id}`, clothingArticle)
+          .then((response) => setResponseMessage(response.data.message))
+          .then(() => getProductsFromDb());
+
+        setClothingArticle({
+          id: -1,
+          name: "",
+          image: "",
+          fit: "men",
+          category: "hoodie",
+          size: "M",
+          color: "",
+          description: "",
+          price: 0,
+          quantity: 0,
+          itemQuantity: 0,
+        });
+      } catch (error) {
+        console.log(error)
       }
     }
+  }
+
+  async function handleDeleteItem(id: number) {
+    try {
+      await axios.delete(`http://localhost:3000/data/${id}`).then((response) => setResponseMessage(response.data.message)).then(() => getProductsFromDb());
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  function handleEditItem(id: number) {
+    const itemToEdit: ClothingProduct = products.find((item) => item.id === id) || { ...clothingArticle };
+
+    // if (!itemToEdit) {
+    //   throw new Error(`Product with id ${id} cannot be found`);
+    // }
+
+    setClothingArticle({ ...itemToEdit });
   }
 
   return (
@@ -254,6 +297,8 @@ export default function ThriftHappensApp() {
           itemsQuantity={itemsQuantity}
           handleAdjustQuantityCounter={handleAdjustQuantityCounter}
           handleAddToCheckout={handleAddToCheckout}
+          handleDeleteItem={handleDeleteItem}
+          handleEditItem={handleEditItem}
         />
         <CheckoutContainer
           checkoutItems={checkoutItems}
